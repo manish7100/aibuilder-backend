@@ -6,19 +6,19 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
-// 🔥 NEW
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 
 const app = express();
 
 // ==================
-// CLOUDINARY CONFIG
+// ✅ CLOUDINARY CONFIG (REAL SECRET)
 // ==================
 cloudinary.config({
   cloud_name: "dzqzilr3f",
   api_key: "865773155558251",
-  api_secret: "PASTE_NEW_SECRET_HERE"
+  api_secret: "HY0zdAFCytB0mfP6SjfljEv8ctA"
 });
 
 // ==================
@@ -54,25 +54,35 @@ const Product = mongoose.model("Product", productSchema);
 // ==================
 app.post("/upload", upload.single("image"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: "products"
     });
 
+    // ✅ DELETE TEMP FILE (VERY IMPORTANT)
+    fs.unlinkSync(req.file.path);
+
     res.json({ imageUrl: result.secure_url });
 
   } catch (err) {
+    console.log("UPLOAD ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ==================
-// PRODUCT APIs
+// TEST ROUTE
 // ==================
-
 app.get("/check", (req, res) => {
   res.send("NEW CODE WORKING");
 });
 
+// ==================
+// PRODUCT APIs
+// ==================
 app.post("/products", async (req, res) => {
   try {
     const product = new Product(req.body);
@@ -94,7 +104,11 @@ app.delete("/products/:id", async (req, res) => {
 });
 
 app.put("/products/:id", async (req, res) => {
-  const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const updated = await Product.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
   res.json(updated);
 });
 
