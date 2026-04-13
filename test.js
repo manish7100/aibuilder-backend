@@ -68,6 +68,11 @@ app.post("/upload", upload.single("image"), async (req, res) => {
 // ==================
 // PRODUCT APIs
 // ==================
+
+app.get("/check", (req, res) => {
+  res.send("NEW CODE WORKING");
+});
+
 app.post("/products", async (req, res) => {
   try {
     const product = new Product(req.body);
