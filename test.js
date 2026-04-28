@@ -1,4 +1,4 @@
-console.log("RUNNING FILE ");
+console.log("RUNNING FILE V2");
 
 require("dotenv").config({ path: __dirname + "/.env" });
 
@@ -13,12 +13,12 @@ const fs = require("fs");
 const app = express();
 
 // ==================
-// ✅ CLOUDINARY CONFIG (REAL SECRET)
+// ✅ CLOUDINARY (USE ENV, NOT HARD CODE)
 // ==================
 cloudinary.config({
-  cloud_name: "dzqzilr3f",
-  api_key: "865773155558251",
-  api_secret: "HY0zdAFCytB0mfP6SjfljEv8ctA"
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET
 });
 
 // ==================
@@ -28,7 +28,6 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// multer temp storage
 const upload = multer({ dest: "uploads/" });
 
 // ==================
@@ -37,6 +36,20 @@ const upload = multer({ dest: "uploads/" });
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.log("❌ DB Error", err));
+
+// ==================
+// ROOT ROUTE (IMPORTANT FIX)
+// ==================
+app.get("/", (req, res) => {
+  res.send("API ROOT WORKING");
+});
+
+// ==================
+// TEST ROUTE (CHECK DEPLOY)
+// ==================
+app.get("/check", (req, res) => {
+  res.send("CHECK ROUTE V2");
+});
 
 // ==================
 // SCHEMA
@@ -50,7 +63,7 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model("Product", productSchema);
 
 // ==================
-// 🔥 IMAGE UPLOAD API
+// IMAGE UPLOAD
 // ==================
 app.post("/upload", upload.single("image"), async (req, res) => {
   try {
@@ -62,7 +75,6 @@ app.post("/upload", upload.single("image"), async (req, res) => {
       folder: "products"
     });
 
-    // ✅ DELETE TEMP FILE (VERY IMPORTANT)
     fs.unlinkSync(req.file.path);
 
     res.json({ imageUrl: result.secure_url });
@@ -71,13 +83,6 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     console.log("UPLOAD ERROR:", err);
     res.status(500).json({ error: err.message });
   }
-});
-
-// ==================
-// TEST ROUTE
-// ==================
-app.get("/check", (req, res) => {
-  res.send("NEW CODE WORKING");
 });
 
 // ==================
