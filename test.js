@@ -51,16 +51,16 @@ const productSchema = new mongoose.Schema({
   price:    { type: Number, required: true },
   image:    { type: String, required: true },
   category: { type: String, enum: ["shirt", "pant", "other"], default: "other" },
-  stock:    { type: Map, of: Number, default: {} },
+  stock:    { type: mongoose.Schema.Types.Mixed, default: {} },
   details:  { type: String, default: "" }
 }, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
 
-// helper: convert Mongoose Map to plain object
+// helper: serialize product to plain object
 function toPlain(product) {
   const obj = product.toObject();
-  obj.stock = obj.stock ? Object.fromEntries(Object.entries(obj.stock)) : {};
+  obj.stock = obj.stock && typeof obj.stock === "object" ? obj.stock : {};
   return obj;
 }
 
@@ -110,12 +110,19 @@ app.get("/products", async (req, res) => {
 app.put("/products/:id", async (req, res) => {
   try {
     const { name, price, image, category, stock, details } = req.body;
-    const updated = await Product.findByIdAndUpdate(
-      req.params.id,
-      { name, price, image, category: category || "other", stock: stock || {}, details: details || "" },
-      { new: true }
-    );
-    res.json(toPlain(updated));
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    product.name     = name;
+    product.price    = price;
+    product.image    = image;
+    product.category = category || "other";
+    product.stock    = stock || {};
+    product.details  = details || "";
+    product.markModified("stock"); // required for Mixed type
+    await product.save();
+
+    res.json(toPlain(product));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
